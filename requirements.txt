@@ -1,0 +1,13 @@
+# Main dependencies
+click==6.6
+readability-api==1.0.2
+
+# Required by click and readability-api
+httplib2==0.9.1
+oauthlib==2.0.0
+py==1.4.31
+pytest==3.0.2
+python-dateutil==2.5.3
+requests==2.11.1
+requests-oauthlib==0.6.2
+six==1.10.0
