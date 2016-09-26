@@ -4,12 +4,18 @@ Readability Reader API.*
 
 This little script takes credentials for a Readability account and the 
 API key and secret to create the standard Readability export file in 
-JSON format that can be used to import your links into Instapaper. As a 
-bonus, it can also create a raw dump including all the additional details 
-the Readability Reader API provides for every single bookmark.
+JSON format that can be used to **import your links into 
+[Instapaper](https://www.instapaper.com/)**. 
 
-We think about adding support for the del.icio.us flavour of bookmarks.html 
-to allow direct import into Pocket. Python 2 support could also be useful for 
+The script can also create a bookmarks.html export file in the del.icio.us 
+flavour including tags to allow direct **import into 
+[Pocket](https://getpocket.com/)** (unfortunately, Pocket does not order the 
+links by the date provided in the file, so it can screw up your reading list). 
+
+As a bonus, the script can also create a raw dump including all the additional 
+details the Readability Reader API provides for every single bookmark.
+
+We think about adding support for Python 2, as that could also be useful for 
 some, currently I have only tested the script on Python 3.4. Another idea is 
 to support an input file, the raw data dump you can generate with this script. 
 Then this script could be used to generate various output formats for different 
@@ -41,7 +47,12 @@ script from [https://github.com/goetzb/readability-exporter](https://github.com/
 
 To run the script, you need to install the requirements from `requirements.txt` - 
 best in a new Python 3 virtual environment:
-```python
+```shell
+pip install -r /path/to/requirements.txt
+```
+
+You can also install the two direct dependencies manually with:
+```shell
 pip install click
 pip install readability-api
 ```
@@ -76,7 +87,7 @@ you call the script.
 Once you have installed all dependencies and have your Readability Reader API 
 and login details ready, the simplest usage is:
 ```shell
-$ python readability-exporter.py 
+$ python readability-exporter.py --format json
 ```
 
 Yes, that's all you have to do to test the export and get the 15 newest 
@@ -85,37 +96,40 @@ bookmarks you have saved to Readability.
 You can flexibly export as many bookmarks in one go as you like by using the 
 `--bookmarks` option:
 ```shell
-$ python readability-exporter.py --bookmarks 100
+$ python readability-exporter.py --format json --bookmarks 100
 ```
  
-This  will export the newest 100 bookmarks you saved. 
+This  will export the newest 100 bookmarks you saved in the default 
+Readability JSON format. 
 
 Of course, if you want to export everything, but you do not know how many 
 bookmarks you actually have saved, we also have you covered, simply specify 
 `--bookmarks 0`:
 ```shell
-$ python readability-exporter.py --bookmarks 0
+$ python readability-exporter.py --format json --bookmarks 0
 ```
 
 If you not only want the default export file Readability used to provide, you 
-can also add `--raw_export` to generate a second file that includes all data 
-the Readability Reader API provides: 
+can also add `--format html` to get a bookmarks.html export including tags, 
+just like what you can download from del.icio.us. 
+And if you add `--format jsonraw` you can generate an output file that includes 
+all data the Readability Reader API provides: 
 ```shell
-$ python readability-exporter.py --bookmarks 0 --raw_export
+$ python readability-exporter.py --format json --format html --format jsonraw --bookmarks 0
 ```
 
 To make it easier for you to locate the file after the export, we try to open 
 your file manager and select your file. If you do not like this behaviour, 
 simply turn it off with `--not_show_file`:
 ```shell
-$ python readability-exporter.py --bookmarks 100 --not_show_file
+$ python readability-exporter.py --format json --bookmarks 100 --not_show_file
 ```
 
 If you want to provide your API key, secret and your login details directly, 
 you can do so using the `--api_key`, `--api_secret`, `--login_user` and 
 `--login_pw` options:
 ```shell
-$ python readability-exporter.py --api_key "{your API key}" --api_secret "{your API secret}" --login_user  "{your Readability username}" --login_pw "{your readability password}" 
+$ python readability-exporter.py --api_key "{your API key}" --api_secret "{your API secret}" --login_user  "{your Readability username}" --login_pw "{your readability password} --format json" 
 ```
 
 There are a few more options available, for example to specify where you want 
