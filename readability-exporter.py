@@ -46,7 +46,7 @@ To get all details from the API and transform it yourself into something useful,
 @click.option('--not_show_file', is_flag=True,
               help='Add this flag if you do not want that the file manager opens automatically after the export')
 @click.option('-e', '--http_error_threshold', default=5, help='Number of retries when an error occurs, defaults to 5')
-@click.version_option(version='20160926a',
+@click.version_option(version='20160928a',
                       prog_name='readability-exporter',
                       message='%(prog)s, version %(version)s by Goetz Buerkle <goetz.buerkle@gmail.com>')
 def readability_exporter(api_key, api_secret, login_user, login_pw,
