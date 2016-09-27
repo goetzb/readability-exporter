@@ -16,11 +16,12 @@ As a bonus, the script can also create a raw dump including all the additional
 details the Readability Reader API provides for every single bookmark.
 
 We think about adding support for Python 2, as that could also be useful for 
-some, currently I have only tested the script on Python 3.4. Another idea is 
-to support an input file, the raw data dump you can generate with this script. 
-Then this script could be used to generate various output formats for different 
-imports even after Readability has shut down its bookmarking service on 
-30 Sep 2016.
+some, currently I have only tested the script on Python 3.4 and fails on 
+Python 2.7 (Unicode handling across both versions seems tricky). 
+Another idea is to support an input file, the raw data dump you can generate 
+with this script. Then this script could be used to generate various output 
+formats for different imports even after Readability has shut down its 
+bookmarking service on 30 Sep 2016.
 
 ## Background
 When I heard in August 2016, that Readability will shutdown its bookmarking 
@@ -74,10 +75,10 @@ is a quick and easy process and only takes seconds!
 My preferred way to let the script know about my API and login credentials is 
 to set the relevant environment variables: 
 ```shell
-$ export READABILITY_CONSUMER_KEY="{your Reader API key}"
-$ export READABILITY_CONSUMER_SECRET="{your Reader API secret}"
-$ export READABILITY_USERNAME="{your username}"
-$ export READABILITY_PASSWORD="{your password}"
+$ export READABILITY_CONSUMER_KEY='{your Reader API key}'
+$ export READABILITY_CONSUMER_SECRET='{your Reader API secret}'
+$ export READABILITY_USERNAME='{your username}'
+$ export READABILITY_PASSWORD='{your password}'
 ```
 
 But you can also specify the key, secret, username and password directly when 
@@ -129,7 +130,7 @@ If you want to provide your API key, secret and your login details directly,
 you can do so using the `--api_key`, `--api_secret`, `--login_user` and 
 `--login_pw` options:
 ```shell
-$ python readability-exporter.py --api_key "{your API key}" --api_secret "{your API secret}" --login_user  "{your Readability username}" --login_pw "{your readability password}" --format json
+$ python readability-exporter.py --api_key '{your API key}' --api_secret '{your API secret}' --login_user  '{your Readability username}' --login_pw '{your readability password}' --format json
 ```
 
 There are a few more options available, for example to specify where you want 

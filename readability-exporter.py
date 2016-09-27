@@ -12,6 +12,7 @@ from readability import auth, ReaderClient
 # Python standard library modules
 from collections import OrderedDict
 from os import path, getcwd
+from io import open as open_
 from math import ceil
 import json
 from datetime import datetime
@@ -45,7 +46,7 @@ To get all details from the API and transform it yourself into something useful,
 @click.option('--not_show_file', is_flag=True,
               help='Add this flag if you do not want that the file manager opens automatically after the export')
 @click.option('-e', '--http_error_threshold', default=5, help='Number of retries when an error occurs, defaults to 5')
-@click.version_option(version='20160926a',
+@click.version_option(version='20160928a',
                       prog_name='readability-exporter',
                       message='%(prog)s, version %(version)s by Goetz Buerkle <goetz.buerkle@gmail.com>')
 def readability_exporter(api_key, api_secret, login_user, login_pw,
@@ -92,8 +93,9 @@ Do Not Edit! -->
     if len(auth_tokens) != 2:
         click.ClickException("""An error occurred and you could not be authenticated successfully.
 Please check your Readability API keys and login details.""")
-    
-    client = ReaderClient(token_key=auth_tokens[0], token_secret=auth_tokens[1])
+
+    client = ReaderClient(token_key=auth_tokens[0], token_secret=auth_tokens[1],
+                          consumer_key=api_key, consumer_secret=api_secret)
     meta_infos = get_readability_meta_infos(readability_reader_client=client)
     click.echo("* You have saved " + click.style("{link_count}".format(
         link_count=meta_infos['bookmarks_total']), bold=True) + " links on Readability")
@@ -157,9 +159,9 @@ Please check your Readability API keys and login details.""")
 
     for exported_file in exported_files:
         if exported_file['file_size'] / 1024 > 1024:
-            file_size_string = '{size:d} MiB'.format(size=round(exported_file['file_size'] / 1024 / 1024))
+            file_size_string = '{size:d} MiB'.format(size=int(round(exported_file['file_size'] / 1024 / 1024)))
         elif exported_file['file_size'] > 1024:
-            file_size_string = '{size:d} KiB'.format(size=round(exported_file['file_size'] / 1024))
+            file_size_string = '{size:d} KiB'.format(size=int(round(exported_file['file_size'] / 1024)))
         else:
             file_size_string = '{size:d} B'.format(size=exported_file['file_size'])
 
@@ -180,20 +182,20 @@ def get_auth_tokens(api_key='', api_secret='', login_user='', login_pw=''):
      For more details about the authentication, please visit
      https://readability-python-library.readthedocs.io/en/latest/auth.html#client-documentation
      """
-    if api_key is '':
+    if api_key == '':
         raise click.BadOptionUsage("""Please provide a Readability API key.
 You can do this either with --api_key or with the environment variable READABILITY_CONSUMER_KEY.
 If you did not create one already, simply visit https://readability.com/settings/account and generate one.
 Generating a new Reader API key just takes seconds!""")
-    if api_secret is '':
+    if api_secret == '':
         raise click.BadOptionUsage("""Please provide a Readability API secret.
 You can do this either with --api_secret or with the environment variable READABILITY_CONSUMER_SECRET.
 If you did not create one already, simply visit https://readability.com/settings/account and generate one.
 Generating a new Reader API key just takes seconds!""")
-    if login_user is '':
+    if login_user == '':
         raise click.BadOptionUsage("""Please provide your Readability user name.
 You can do this either with --login_user or with the environment variable READABILITY_USERNAME.""")
-    if login_pw is '':
+    if login_pw == '':
         raise click.BadOptionUsage("""Please provide your Readability password.
 You can do this either with --api_pw or with the environment variable READABILITY_PASSWORD.""")
     
@@ -322,9 +324,10 @@ def export_bookmarks_via_api(readability_reader_client=None, bookmarks_number=1,
 
 def write_export_data(filetype='json', directory=None, filename=None, data=None):
     file_path = path.join(directory, filename)
-    with open(file_path, 'a') as export_file:
+        
+    with open_(file_path, 'a', encoding='utf-8') as export_file:
         if filetype == 'json':
-            export_data = json.dumps(data, indent=4)
+            export_data = json.dumps(data, indent=4, ensure_ascii=False)
         else:
             export_data = data
         
@@ -336,6 +339,7 @@ def write_export_data(filetype='json', directory=None, filename=None, data=None)
             click.echo(" All your bookmarks have been processed and were converted to HTML.")
         else:
             click.echo(" We are are now writing a file with all your links to your hard drive.")
+
         export_file.write(export_data)
     # implicit close()
         
