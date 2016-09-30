@@ -34,6 +34,8 @@ To get all details from the API and transform it yourself into something useful,
 'json' = default Readability export including title, URL, date added, archived and if the link was favourited
 'html' = bookmarks.html as exported by del.icio.us including tags
 'jsonraw' = raw dump as provided by Readability Reader API""")
+@click.option('--export_content', is_flag=True,
+              help='Add this flag if you also want to include article content in the json export - can be slow.')
 @click.option('-b', '--bookmarks', default=15,
               help='Number of bookmarks to export, 0 to export all bookmarks - default 15')
 @click.option('-d', '--export_directory',
@@ -50,7 +52,8 @@ To get all details from the API and transform it yourself into something useful,
                       prog_name='readability-exporter',
                       message='%(prog)s, version %(version)s by Goetz Buerkle <goetz.buerkle@gmail.com>')
 def readability_exporter(api_key, api_secret, login_user, login_pw,
-                         format, bookmarks, export_directory, export_filename, not_show_file, http_error_threshold):
+                         format, bookmarks, export_directory, export_filename, not_show_file, export_content,
+                         http_error_threshold):
     """Readability Exporter
    
    This little script takes credentials for a Readability account and the API key and secret to create the standard
@@ -74,6 +77,13 @@ def readability_exporter(api_key, api_secret, login_user, login_pw,
     export_dict['bookmarks'] = []
     # Add empty recommendations list - in my example this was just empty.
     export_dict["recommendations"] = []
+    
+    # Prepare json with content dictionary
+    export_dict_content = export_dict
+    # export_dict_content = OrderedDict()
+    # export_dict_content['bookmarks'] = []
+    # # Add empty recommendations list - in my example this was just empty.
+    # export_dict_content["recommendations"] = []
     
     # Prepare jsonraw export dictionary
     export_dict_raw = OrderedDict()
@@ -105,13 +115,22 @@ Please check your Readability API keys and login details.""")
     
     click.echo("* We are now going to export the latest " + click.style("{export_count}".format(
         export_count=bookmarks), bold=True) + " of your links")
+    if export_content:
+        format_list = list(format)
+        if 'json' not in format:
+            format_list.append('json')
+        format_list.append('json_with_content')
+        format = tuple(format_list)
+        click.echo("""* We are going to include the """ + click.style("content of your articles",
+                                                                  bold=True) + """ in a JSON export file.
+  This file can perhaps not be used to import data into Instapaper!""")
     
     if bookmarks < 50:
         bookmarks_per_page = bookmarks + 1
     else:
         bookmarks_per_page = 50
     bookmarks_get_pages = int(ceil(bookmarks/bookmarks_per_page))
-
+        
     data_export = export_bookmarks_via_api(readability_reader_client=client,
                                            export_formats=format,
                                            bookmarks_number=bookmarks,
@@ -120,6 +139,7 @@ Please check your Readability API keys and login details.""")
                                            export_json=export_dict,
                                            export_html=export_html,
                                            export_jsonraw=export_dict_raw,
+                                           export_json_with_content=export_dict_content,
                                            error_threshold=http_error_threshold)
     
     click.echo("Bear with us, we are almost there. In the next step we bring the data into the right formats.")
@@ -132,7 +152,7 @@ Please check your Readability API keys and login details.""")
                            show_percent=True) as files_bar:
         for export_format in format:
             output_data = data_export[export_format]
-            if export_format == 'json' or export_format == 'jsonraw':
+            if export_format == 'json' or export_format == 'jsonraw' or export_format == 'json_with_content':
                 filetype = 'json'
             elif export_format == 'html':
                 filetype = 'html'
@@ -225,8 +245,8 @@ def get_readability_meta_infos(readability_reader_client=None):
 
 def export_bookmarks_via_api(readability_reader_client=None, bookmarks_number=1, bookmarks_per_page=5,
                              bookmarks_get_pages=1,
-                             export_formats=[], export_json=None, export_html=None, export_jsonraw=None,
-                             error_threshold=5):
+                             export_formats=(), export_json=None, export_html=None, export_jsonraw=None,
+                             export_json_with_content=None, error_threshold=5):
     """Query Readability Reader API to export data
 
     Return a ordered dictionary with the specified number of links.
@@ -276,6 +296,42 @@ def export_bookmarks_via_api(readability_reader_client=None, bookmarks_number=1,
     
                         export_json['bookmarks'].append(bookmark_dict)
 
+                    content_available = False
+                    if 'json_with_content' in export_formats and 'json' in export_formats:
+                        article_details_response = readability_reader_client.get_article(bookmark['article']['id'])
+                        if article_details_response.status_code == 200:
+                            content_available = True
+                            article_response_dict = article_details_response.json()
+                        else:
+                            click.echo(click.style("""Sorry! We could not export the all article contents successfully.
+The Readability API produced the error code {status_code}: {reason}
+(Debug details: URL {url})""".format(
+                                status_code=article_details_response.status_code,
+                                reason=article_details_response.reason,
+                                url=article_details_response.url), fg='red'))
+
+                    if content_available:
+                        bookmark_dict_content = bookmark_dict
+                        # When export is non-standard format JSON anyway, also add tags:
+                        tags = []
+                        for tag in bookmark['tags']:
+                            tags.append(tag['text'])
+                        bookmark_dict_content["tags"] = tags
+                        if 'content' in article_response_dict:
+                            bookmark_dict_content["article__content"] = article_response_dict['content']
+                        else:
+                            bookmark_dict_content["article__content"] = ''
+                        if 'content_size' in article_response_dict:
+                            bookmark_dict_content["article__content_size"] = article_response_dict['content_size']
+                        else:
+                            bookmark_dict_content["article__content_size"] = ''
+                        if 'short_url' in article_response_dict:
+                            bookmark_dict_content["article__short_url"] = article_response_dict['short_url']
+                        else:
+                            bookmark_dict_content["article__short_url"] = ''
+
+                        export_json_with_content['bookmarks'].append(bookmark_dict_content)
+
                     if 'html' in export_formats:
                         # del.icio.us Bookmarks.html format
                         bookmark_datetime = datetime.strptime(bookmark["date_added"], '%Y-%m-%d %H:%M:%S')
@@ -319,7 +375,8 @@ def export_bookmarks_via_api(readability_reader_client=None, bookmarks_number=1,
             bookmark_pages_export_count += 1
             bar.update(bookmark_pages_export_count)
     
-    return {'json': export_json, 'html': export_html, 'jsonraw': export_jsonraw}
+    return {'json': export_json, 'html': export_html, 'jsonraw': export_jsonraw,
+            'json_with_content': export_json_with_content}
 
 
 def write_export_data(filetype='json', directory=None, filename=None, data=None):
